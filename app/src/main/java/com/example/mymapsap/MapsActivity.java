@@ -1,12 +1,16 @@
 package com.example.mymapsap;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.google.android.gms.common.wrappers.PackageManagerWrapper;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -15,11 +19,16 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener  {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private LocationManager locationManager;
-    private boolean providerEnabled;
+
+    private static boolean isNetworkEnabled = true;
+    private static boolean isGPSEnabled = true;
+
+    private static final long MIN_TIME_BW_UPDATES = 1000*5;
+    private static final float MIN_DISTANCE_CHANGE_FOR_UPDATE = 0.0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) throws SecurityException {
@@ -30,9 +39,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        //new
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
     }
 
 
@@ -62,37 +68,120 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         //Add current location marker
-        LatLng current = new LatLng(33, -117.18);
-        mMap.addMarker(new MarkerOptions().position(current).title("You are here"));
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(current));
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.)
+        {
+            Log.d("MyMaps", "Failed permission check 1");
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION});
+        }
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager)
+        {
+            Log.d("MyMaps", "Failed permission check 2");
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_COARSE_LOCATION});
+        }
+
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager)
+            && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager)
+        {
+            Log.d("MyMaps", "Dropping marker at my location");
+            mMap.setMyLocationEnabled(true);
+        }
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(LA));
     }
 
-    @Override
-    public void onLocationChanged(Location location)
+    public void getLocation()
     {
-        LatLng temp = new LatLng(location.getLongitude(), location.getLatitude());
-        mMap.addMarker(new MarkerOptions().position(temp));
-        Log.d("MapsActivity: ", "\tLongitude: " + temp.longitude +"\tLatitude: " + temp.latitude);
+        try
+        {
+            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+            //get GPS status
+            isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            if(isGPSEnabled)
+            {
+                Log.d("MyMaps", "GPS is enabled");
+            }
+
+            //get Network status
+            isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            if(isNetworkEnabled)
+            {
+                Log.d("MyMaps", "Network is enabled");
+            }
+
+            if(!isGPSEnabled && !isNetworkEnabled)
+            {
+                Log.d("MyMaps", "No provider is enabled");
+            }
+            else
+            {
+                if(isNetworkEnabled)
+                {
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                            MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                }
+                if(isGPSEnabled)
+                {
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                            MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerGPS);
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            Log.d("MyMaps", "Caught execption in getLocation");
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public void onProviderDisabled(String provider)
+    LocationListener locationListenerNetwork = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
+    LocationListener locationListenerGPS = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
+    public void changeView()
     {
-        providerEnabled = false;
-        Log.d("MapsActivity: ", "provider disabled");
-    }
-
-    @Override
-    public void onProviderEnabled(String provider)
-    {
-        providerEnabled = true;
-        Log.d("MapsActivity: ", "provider enabled");
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras)
-    {
 
     }
+
 }

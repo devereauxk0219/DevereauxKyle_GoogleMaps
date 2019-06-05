@@ -10,10 +10,12 @@
         android:layout_height="wrap_content"
         android:background="@android:color/holo_blue_light"
         android:weightSum="1">
+
         <Button
             android:id="@+id/button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:onClick="changeView"
             android:text="Button" />
     </LinearLayout>
     <!-- This is for the map -->
