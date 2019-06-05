@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:onClick="changeView"
-            android:text="Button" />
+            android:text="Map type toggle" />
     </LinearLayout>
     <!-- This is for the map -->
     <fragment

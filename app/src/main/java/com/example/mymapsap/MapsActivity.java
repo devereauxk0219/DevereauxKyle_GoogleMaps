@@ -9,6 +9,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
 import com.google.android.gms.common.wrappers.PackageManagerWrapper;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -27,7 +28,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static boolean isNetworkEnabled = true;
     private static boolean isGPSEnabled = true;
 
-    private static final long MIN_TIME_BW_UPDATES = 1000*5;
+    private static final long MIN_TIME_BW_UPDATES = 1000 * 5;
     private static final float MIN_DISTANCE_CHANGE_FOR_UPDATE = 0.0f;
 
     @Override
@@ -65,59 +66,55 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //Add birthplace marker
         LatLng LA = new LatLng(33.7, -118);
         mMap.addMarker(new MarkerOptions().position(LA).title("My birthplace"));
-
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(LA));
 
         //Add current location marker
-
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.)
-        {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.d("MyMaps", "Failed permission check 1");
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION});
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 2);
         }
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager)
-        {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.d("MyMaps", "Failed permission check 2");
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_COARSE_LOCATION});
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 2);
         }
 
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager)
-            && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager)
-        {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             Log.d("MyMaps", "Dropping marker at my location");
             mMap.setMyLocationEnabled(true);
         }
-
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(LA));
     }
 
-    public void getLocation()
-    {
-        try
-        {
+    public void getLocation() {
+        try {
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
             //get GPS status
             isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            if(isGPSEnabled)
-            {
+            if (isGPSEnabled) {
                 Log.d("MyMaps", "GPS is enabled");
             }
 
             //get Network status
             isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-            if(isNetworkEnabled)
-            {
+            if (isNetworkEnabled) {
                 Log.d("MyMaps", "Network is enabled");
             }
 
-            if(!isGPSEnabled && !isNetworkEnabled)
-            {
+            if (!isGPSEnabled && !isNetworkEnabled) {
                 Log.d("MyMaps", "No provider is enabled");
-            }
-            else
-            {
-                if(isNetworkEnabled)
-                {
+            } else {
+                if (isNetworkEnabled) {
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
                     locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                             MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
                 }
@@ -179,9 +176,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     };
 
-    public void changeView()
+    public void changeView(View view)
     {
-
+        if(mMap.getMapType() == mMap.MAP_TYPE_NORMAL)
+        {
+            mMap.setMapType(mMap.MAP_TYPE_SATELLITE);
+        }
+        else
+        {
+            mMap.setMapType(mMap.MAP_TYPE_NORMAL);
+        }
     }
 
 }
