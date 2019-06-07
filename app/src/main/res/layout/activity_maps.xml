@@ -13,10 +13,26 @@
 
         <Button
             android:id="@+id/button"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="changeView"
-            android:text="Map type toggle" />
+            android:text="Map toggle" />
+
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="148dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:onClick="trackMyLocation"
+            android:text="Track" />
+
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="clear"
+            android:text="Clear" />
     </LinearLayout>
     <!-- This is for the map -->
     <fragment

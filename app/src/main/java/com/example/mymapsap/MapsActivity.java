@@ -41,6 +41,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private double latitude, longitude;
     private static final int MY_LOC_ZOOM_FACTOR = 17;
 
+    private boolean gotMyLocationOneTime;
+    private boolean tracking = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) throws SecurityException {
@@ -94,9 +96,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.d("MyMaps", "Dropping marker at my location");
             mMap.setMyLocationEnabled(true);
         }
+
+        gotMyLocationOneTime = false;
+
+        getLocation();
+
     }
 
-    public void getLocation() {
+    public void getLocation() { //done
         try {
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
@@ -140,48 +147,41 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    LocationListener locationListenerNetwork = new LocationListener() {
+    LocationListener locationListenerNetwork = new LocationListener() { //done
         @Override
         public void onLocationChanged(Location location) {
 
-            //FINISH
+            dropMarker(LocationManager.NETWORK_PROVIDER);
 
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                    MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, );
+            if (gotMyLocationOneTime == false) {
+                locationManager.removeUpdates(this);
+                locationManager.removeUpdates(locationListenerGPS);
+                gotMyLocationOneTime = true;
+            } else {
+                if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                        MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+            }
+
         }
 
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-
-        }
-    };
-
-    LocationListener locationListenerGPS = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            dropMarker(LocationManager.GPS_PROVIDER);
-            locationManager.removeUpdates(locationListenerNetwork);
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-            //FINISH
             switch (status) {
                 case LocationProvider.AVAILABLE:
-                    Toast.makeText(MapsActivity.this, "GPS onstatus is available", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MapsActivity.this, "Network onstatus is available", Toast.LENGTH_SHORT).show();
                     break;
                 case LocationProvider.OUT_OF_SERVICE:
-                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         // TODO: Consider calling
                         //    ActivityCompat#requestPermissions
                         // here to request the missing permissions, and then overriding
@@ -191,11 +191,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         // for ActivityCompat#requestPermissions for more details.
                         return;
                     }
-                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                            MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                    if(tracking)
+                    {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                    }
                     break;
-
-
+                case LocationProvider.TEMPORARILY_UNAVAILABLE:
+                    if(tracking)
+                    {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                    }
+                    break;
+                default:
+                    if(tracking)
+                    {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                    }
+                    break;
             }
         }
 
@@ -210,7 +225,70 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     };
 
-    public void dropMarker(String provider) {
+    LocationListener locationListenerGPS = new LocationListener() {  //done
+        @Override
+        public void onLocationChanged(Location location) {
+            dropMarker(LocationManager.GPS_PROVIDER);
+
+            if(gotMyLocationOneTime == false) {
+                locationManager.removeUpdates(this);
+                locationManager.removeUpdates(locationListenerNetwork);
+                gotMyLocationOneTime = true;
+            }
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            switch (status) {
+                case LocationProvider.AVAILABLE:
+                    Toast.makeText(MapsActivity.this, "GPS onstatus is available", Toast.LENGTH_SHORT).show();
+                    break;
+                case LocationProvider.OUT_OF_SERVICE:
+                    if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
+                    if(tracking)
+                    {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                    }
+                    break;
+                case LocationProvider.TEMPORARILY_UNAVAILABLE:
+                    if(tracking)
+                    {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                    }
+                    break;
+                default:
+                    if(tracking)
+                    {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                    }
+                    break;
+            }
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
+    public void dropMarker(String provider) {   //done
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -250,7 +328,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void changeView(View view)
     {
-        if(mMap.getMapType() == mMap.MAP_TYPE_NORMAL)
+        if(mMap.getMapType() != mMap.MAP_TYPE_SATELLITE)
         {
             mMap.setMapType(mMap.MAP_TYPE_SATELLITE);
         }
@@ -258,6 +336,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         {
             mMap.setMapType(mMap.MAP_TYPE_NORMAL);
         }
+    }
+
+    public void trackMyLocation(View view)
+    {
+        if(tracking == false)
+        {
+            getLocation();
+            tracking = true;
+        }
+        else
+        {
+            locationManager.removeUpdates(locationListenerGPS);
+            locationManager.removeUpdates(locationListenerNetwork);
+            tracking = false;
+        }
+    }
+
+    public void clear(View view)
+    {
+        mMap.clear();
     }
 
 }
